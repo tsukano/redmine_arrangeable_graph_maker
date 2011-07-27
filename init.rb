@@ -10,16 +10,11 @@ Redmine::Plugin.register :redmine_arrangeable_graph_maker do
 
 
   project_module :arrangeable_graph_maker do
-    permission :view_graph, :graph_maker => :index 
+    permission :view_graph, :graph_maker => [:index, :get_graph] 
   end
 
-  menu :project_menu,
-       :graph,
-       { :controller => 'graph_maker', 
-         :action => 'index' },
-       :caption => 'グラフ',
-       :after => :activity,
-       :param => :project_id
+  menu :project_menu, :graph, { :controller => 'graph_maker', :action => 'index' }, :caption => 'グラフ', :after => :activity, :param => :project_id
 
 
 end
+
