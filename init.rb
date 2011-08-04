@@ -1,5 +1,5 @@
 require 'redmine'
-
+require 'gruff'
 Redmine::Plugin.register :redmine_arrangeable_graph_maker do
   name 'Redmine Arrangeable Graph Maker plugin'
   author 'Ryuma Tsukano'
@@ -10,11 +10,30 @@ Redmine::Plugin.register :redmine_arrangeable_graph_maker do
 
 
   project_module :arrangeable_graph_maker do
-    permission :view_graph, :graph_maker => [:index, :get_graph] 
+    permission :view_graph, 
+               :graph_maker => [:index, 
+                                :get_graph, 
+                                :get_trend_graph, 
+                                :show_trend,
+                                :get_long_graph,
+                                :show_long] 
   end
 
-  menu :project_menu, :graph, { :controller => 'graph_maker', :action => 'index' }, :caption => 'グラフ', :after => :activity, :param => :project_id
+  menu :project_menu, 
+       :long_graph, 
+       { :controller => 'graph_maker', 
+         :action => 'show_long' }, 
+       :caption => '長期遷移G', 
+       :after => :activity, 
+       :param => :project_id
 
+  menu :project_menu, 
+       :trend_graph, 
+       { :controller => 'graph_maker', 
+         :action => 'show_trend' }, 
+       :caption => '傾向分析G', 
+       :after => :activity, 
+       :param => :project_id
 
 end
 

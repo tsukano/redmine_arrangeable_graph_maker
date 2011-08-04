@@ -2,14 +2,90 @@ class GraphMakerController < ApplicationController
   unloadable
 
   before_filter :find_project
-  before_filter :authorize, :only => :index
+  before_filter :authorize, :only => [:index, :show_long, :show_trend]
 
-  menu_item :graph
+  menu_item :long_graph, :only => :show_long
+  menu_item :trend_graph, :only => :show_trend
 
   def index
 
   end
-  
+
+  def show_long
+
+  end
+
+  def show_trend
+    @queries = Query.find_all_by_project_id(@project.id)
+  end
+
+  def get_long_graph
+    year = 2011
+    start_date = DateTime.new(year, 4)
+
+    project_trackers = @project.trackers
+    count_each_tracker = Hash.new
+    project_trackers.each { |tracker| count_each_tracker.store tracker, Array.new }
+
+    graph = CustomizedGraph.new("月毎のチケット件数", 
+                                600, 
+                                Gruff::StackedBar)
+
+
+    12.times do |num| 
+      graph.push_label((start_date + num.months).month.to_s + "月")
+      issue_counts = Issue.count(:group => "tracker_id",
+                                 :conditions => [ "project_id = ? and " +
+                                                  "created_on >= ? and " +
+                                                  "created_on < ?",
+                                                  @project.id,
+                                                  start_date + num.months,
+                                                  start_date + (num + 1).months ])
+
+      project_trackers.each do |tracker|
+        count = issue_counts[tracker.id]
+        if count == nil
+          count_each_tracker[tracker].push 0
+        else
+          count_each_tracker[tracker].push count
+        end
+      end
+    end
+
+    project_trackers.each do |tracker|
+      graph.push_data(tracker.name, count_each_tracker[tracker])
+    end
+
+    send_data(graph.blob,
+              :type => 'image/png', 
+              :disposition => 'inline')
+
+  end
+
+  def get_trend_graph
+    query = Query.find_by_id(params[:query_id])
+    group = query.group_by
+    graph = CustomizedGraph.new("#{group}毎のチケット件数", 600, Gruff::Pie)
+=begin
+    tracker = 10 # shogai
+    group = "priority" # session[:query][:id]/ group_by no grouping retrieve_query 74
+=end
+    group_class = group == "status" ? "IssueStatus" : group.classify
+    item_names = group_class.constantize.all.collect{|item| [item.id, item.name] }
+    item_names = Hash[item_names]
+    issue_counts = Issue.count(:group      => "#{group}_id",
+                               :conditions => { :project_id => @project.id })
+    issue_counts.each do |count|
+      group_name = item_names[count[0]]
+      count = count[1]
+      graph.push_data(group_name, count)
+    end
+    send_data(graph.blob,
+              :type => 'image/png', 
+              :disposition => 'inline')
+
+  end
+
   def get_graph
 
     gruff = Gruff::Net.new 500
@@ -22,7 +98,7 @@ class GraphMakerController < ApplicationController
     
     count_each_tracker = Hash.new
 
-    [false, true].each do |is_closed_status|
+    [false, true, :all].each do |is_closed_status|
 
       trackers.each do |tracker|
         count_issue = Issue.count(:first,
@@ -30,10 +106,11 @@ class GraphMakerController < ApplicationController
                                   :conditions => 
                                     ["issues.project_id = ? AND " +
                                      "issues.tracker_id = ? AND " +
-                                     "issue_statuses.is_closed = ?",
+                                     "issue_statuses.is_closed IN (?)",
                                       @project.id, 
                                       tracker.id,
-                                      is_closed_status])
+                                      is_closed_status == :all ? [true, false] :
+                                                                 is_closed_status])
 
         if count_each_tracker.keys.include? is_closed_status
           count_each_tracker[is_closed_status].push count_issue
@@ -43,8 +120,9 @@ class GraphMakerController < ApplicationController
       end
     end
 
-    gruff.data('完了', count_each_tracker[true])
-    gruff.data('未完了', count_each_tracker[false])
+    gruff.data("完了   #{count_each_tracker[true]}", count_each_tracker[true])
+    gruff.data("未完了 #{count_each_tracker[false]} ", count_each_tracker[false])
+    gruff.data("全て   #{count_each_tracker[:all]} ", count_each_tracker[:all])
 
     trackers.each_with_index do |tracker, i|
       gruff.labels.store(i, tracker.name)

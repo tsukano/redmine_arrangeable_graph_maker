@@ -1,0 +1,15 @@
+<p>
+このページは、このプロジェクトで使用している
+カスタムクエリ毎のグループ条件を元にグラフを描写しています。
+</p>
+<p>
+注意：まだ素案なので、細かなテスト・実装調整してないです。
+</p>
+
+<% @queries.each do |query| %>
+<h3><%= query.name %></h3>
+<img src='<%= url_for :controller => 'graph_maker', 
+                      :action => 'get_trend_graph',
+                      :project_id => @project.identifier,
+                      :query_id => query.id %>' >
+<% end %>
