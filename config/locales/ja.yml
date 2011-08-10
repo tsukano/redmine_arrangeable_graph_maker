@@ -1,0 +1,12 @@
+ja:
+  label_trend_graph: "傾向G"
+  label_long_graph: "長期G"
+  label_completion_graph: "完了G"
+  project_module_arrangeable_graph_maker: "グラフメーカープラグイン"
+  permission_view_graph: "グラフ表示"
+  graph_items:
+    minute: "分"
+    hour: "時間"
+    day: "日"
+    less_than: "以内"
+    more_than: "以上"

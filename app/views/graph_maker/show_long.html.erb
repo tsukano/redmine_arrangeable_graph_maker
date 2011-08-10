@@ -5,7 +5,19 @@
 <h3>2011</h3>
 <img src='<%= url_for :controller => 'graph_maker', 
                       :action => 'get_long_graph',
-                      :project_id => @project.identifier %>' >
+                      :project_id => @project.identifier,
+                      :graph_variation => 'StackedBar' %>' >
 
 <h3>2010</h3>
+<img src='<%= url_for :controller => 'graph_maker', 
+                      :action => 'get_long_graph',
+                      :project_id => @project.identifier,
+                      :graph_variation => 'Net' %>' >
+
 <h3>2009</h3>
+<img src='<%= url_for :controller => 'graph_maker', 
+                      :action => 'get_long_graph',
+                      :project_id => @project.identifier,
+                      :graph_variation => 'Line' %>' >
+
+

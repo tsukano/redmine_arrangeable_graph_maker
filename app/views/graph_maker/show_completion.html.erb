@@ -1,0 +1,6 @@
+<h2>チケット解決までの時間</h2>
+<img src='<%= url_for :controller => 'graph_maker', 
+                      :action => 'get_completion_graph',
+                      :project_id => @project.identifier,
+                      :first_interval => '5' %>' >
+

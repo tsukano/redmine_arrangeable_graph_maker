@@ -2,14 +2,12 @@ class GraphMakerController < ApplicationController
   unloadable
 
   before_filter :find_project
-  before_filter :authorize, :only => [:index, :show_long, :show_trend]
-
+  before_filter :authorize, :only => [:show_long, 
+                                      :show_trend,
+                                      :show_completion]
   menu_item :long_graph, :only => :show_long
   menu_item :trend_graph, :only => :show_trend
-
-  def index
-
-  end
+  menu_item :completion_graph, :only => :show_completion
 
   def show_long
 
@@ -17,6 +15,60 @@ class GraphMakerController < ApplicationController
 
   def show_trend
     @queries = Query.find_all_by_project_id(@project.id)
+  end
+
+  def show_completion
+
+  end
+
+  def get_completion_graph
+
+    first_interval = params[:first_interval]
+    if first_interval.nil? || first_interval.empty?
+      first_interval = AdvancedIssue::DEFAULT_FIRST_INTERVAL 
+    end
+
+    intervals = AdvancedIssue.intervals(first_interval)
+    counts = AdvancedIssue.counts_completion_time(@project.id,
+                                                  intervals)
+
+    graph = CustomizedGraph.new("チケット完了までの時間", 600, Gruff::Bar)
+    graph.push_data("#{DateTime.now.month}月度チケット件数", counts)
+    intervals.each do |interval|
+      graph.push_label(AdvancedDate.get_formatted_time(interval, :less_than))
+    end
+    graph.push_label(AdvancedDate.get_formatted_time(intervals.last, :more_than))
+
+    send_data(graph.blob,
+              :type => 'image/png', 
+              :disposition => 'inline')
+
+  end
+
+
+  def get_monthly_graph
+    created_issues = Issue.find(:all,
+                                :select => :created_on,
+                                :order => "created_on ASC",
+                                :conditions => [ "project_id = ? and " +
+                                                 "created_on > ? ",
+                                                 @project.id,
+                                                 DateTime.now - 1.months])
+
+
+    count_each_hour = Array.new(24,0)
+    created_issues.each do |issue|
+      count_each_hour[issue.created_on.hour] += 1
+    end
+
+    graph = CustomizedGraph.new("時間帯別のチケット件数", 600, Gruff::Line)
+    graph.push_data("作成日並び", count_each_hour)
+    (0..23).each do |hour| graph.push_label(hour.to_s) end
+
+    send_data(graph.blob,
+              :type => 'image/png', 
+              :disposition => 'inline')
+
   end
 
   def get_long_graph
@@ -29,7 +81,7 @@ class GraphMakerController < ApplicationController
 
     graph = CustomizedGraph.new("月毎のチケット件数", 
                                 600, 
-                                Gruff::StackedBar)
+                                "Gruff::#{params[:graph_variation]}".constantize)
 
 
     12.times do |num| 
@@ -65,7 +117,7 @@ class GraphMakerController < ApplicationController
   def get_trend_graph
     query = Query.find_by_id(params[:query_id])
     group = query.group_by
-    graph = CustomizedGraph.new("#{group}毎のチケット件数", 600, Gruff::Pie)
+    graph = CustomizedGraph.new("#{query.name}(#{group}毎のticket件数)", 600, Gruff::Pie)
 =begin
     tracker = 10 # shogai
     group = "priority" # session[:query][:id]/ group_by no grouping retrieve_query 74

@@ -11,29 +11,37 @@ Redmine::Plugin.register :redmine_arrangeable_graph_maker do
 
   project_module :arrangeable_graph_maker do
     permission :view_graph, 
-               :graph_maker => [:index, 
-                                :get_graph, 
+               :graph_maker => [:get_graph, 
                                 :get_trend_graph, 
                                 :show_trend,
                                 :get_long_graph,
-                                :show_long] 
+                                :show_long, 
+                                :get_monthly_graph,
+                                :show_completion,
+                                :get_completion_graph]
   end
 
   menu :project_menu, 
        :long_graph, 
        { :controller => 'graph_maker', 
          :action => 'show_long' }, 
-       :caption => '長期遷移G', 
        :after => :activity, 
+       :param => :project_id
+
+  menu :project_menu,
+       :completion_graph,
+       { :controller => 'graph_maker',
+         :action => 'show_completion'},
+       :after => :activity,
        :param => :project_id
 
   menu :project_menu, 
        :trend_graph, 
        { :controller => 'graph_maker', 
          :action => 'show_trend' }, 
-       :caption => '傾向分析G', 
        :after => :activity, 
        :param => :project_id
+
 
 end
 
