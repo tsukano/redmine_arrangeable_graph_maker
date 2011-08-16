@@ -15,7 +15,17 @@ class CustomizedGraph
     @gruff.labels.store(@gruff.labels.size, label)
   end
 
+  def set_labels_from_array(label_array)
+    label_array.each { |label| push_label(label) }
+  end
+
   def blob
+    
+    case @gruff.maximum_value
+    when 1..2
+      @gruff.marker_count = @gruff.maximum_value
+    end
+
     return @gruff.to_blob()
   end
 

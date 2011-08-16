@@ -5,8 +5,9 @@ ja:
   project_module_arrangeable_graph_maker: "グラフメーカープラグイン"
   permission_view_graph: "グラフ表示"
   graph_items:
-    minute: "分"
+    min: "分"
     hour: "時間"
     day: "日"
     less_than: "以内"
     more_than: "以上"
+    others: "その他"

@@ -19,25 +19,47 @@ class GraphMakerController < ApplicationController
 
   def show_completion
 
+    @first_interval = params[:first_interval]
+    if @first_interval.nil? || @first_interval.empty?
+      @first_interval = AdvancedIssue::DEFAULT_FIRST_INTERVAL 
+    end
+
+    advanced_issue = AdvancedIssue.new
+    
+    intervals = advanced_issue.intervals(@first_interval)
+    @counts = advanced_issue.counts_completion_time(@project.id,
+                                                    intervals)
+
+    @labels = Array.new
+    @table_labels = Array.new
+    intervals.each do |interval|
+      @labels.push(AdvancedDate.get_formatted_time(interval, :less_than, true))
+      @table_labels.push(AdvancedDate.get_formatted_time(interval, :less_than))
+    end
+    @labels.push(AdvancedDate.get_formatted_time(intervals.last, :more_than, true))
+    @table_labels.push(AdvancedDate.get_formatted_time(intervals.last, :more_than))
+
+    @all_labels = Hash.new
+    AdvancedIssue::INTERVALS.keys.sort.each do |key|
+      @all_labels[key] = Array.new
+      AdvancedIssue::INTERVALS[key].each do |interval|
+        display_time = AdvancedDate.get_formatted_time(interval, :less_than)
+        @all_labels[key].push display_time
+      end
+      display_time = AdvancedDate.get_formatted_time(AdvancedIssue::INTERVALS[key].last, :more_than)
+      @all_labels[key].push display_time
+    end
+
   end
 
   def get_completion_graph
-
-    first_interval = params[:first_interval]
-    if first_interval.nil? || first_interval.empty?
-      first_interval = AdvancedIssue::DEFAULT_FIRST_INTERVAL 
-    end
-
-    intervals = AdvancedIssue.intervals(first_interval)
-    counts = AdvancedIssue.counts_completion_time(@project.id,
-                                                  intervals)
+    counts = params[:counts].map { |count_str| count_str.to_i }
+    labels = params[:labels]
 
     graph = CustomizedGraph.new("チケット完了までの時間", 600, Gruff::Bar)
     graph.push_data("#{DateTime.now.month}月度チケット件数", counts)
-    intervals.each do |interval|
-      graph.push_label(AdvancedDate.get_formatted_time(interval, :less_than))
-    end
-    graph.push_label(AdvancedDate.get_formatted_time(intervals.last, :more_than))
+
+    graph.set_labels_from_array(labels)
 
     send_data(graph.blob,
               :type => 'image/png', 

@@ -1,6 +1,45 @@
 <h2>チケット解決までの時間</h2>
+<% form_tag(:controller => 'graph_maker', :action => 'show_completion', :project_id => @project.identifier ) do %>
+  <%= select_tag( 'first_interval', 
+                  options_for_select(
+                    @all_labels.keys.sort.map do |key|
+                      [ @all_labels[key][0] + " ～ " + @all_labels[key][6], key.to_s ]
+                    end,
+                    @first_interval
+                  )
+                ) %>
+
+  <%= submit_tag("送信") %>
+<% end %>
+
+<table class="list" style="width:600px;">
+  <tbody>
+    <tr>
+      <th>
+        件数
+      </th>
+      <% sum = @counts.inject(0) {|sum, count| sum += count } %>
+      <% @counts.each do |count| %>
+        <td>
+          <%= count %>
+          <%= "(#{(count.to_f / sum.to_f * 100).round}%)" %>
+        </td>
+      <% end %>
+    </tr>
+    <tr>
+      <th>
+        完了時間
+      </th>
+      <% @table_labels.each do |label| %>
+        <th>
+          <%= label %>
+        </th>
+      <% end %>
+    </tr>
+   </tbody>
+</table>
 <img src='<%= url_for :controller => 'graph_maker', 
-                      :action => 'get_completion_graph',
-                      :project_id => @project.identifier,
-                      :first_interval => '5' %>' >
+                      :action     => 'get_completion_graph',
+                      :counts     => @counts ,
+                      :labels     => @labels %>' >
 
