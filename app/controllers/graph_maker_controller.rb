@@ -17,21 +17,7 @@ class GraphMakerController < ApplicationController
   include QueriesHelper
   helper :sort
   include SortHelper
-=begin
-  def select_view
-    if params['graph']
-      case params['graph']['mode']
-      when 'trend'
-        redirect_to :action => :show_trend, :project_id => params[:project_id]
-      when 'completion'
-        redirect_to :action => :show_completion
-      end
-    else
-    redirect_to :action => :show_trend, :project_id => params[:project_id]
-    end
-
-  end
-=end  
+ 
   def show_customize
     @queries = Query.find_all_by_project_id(@project.id)
     @group_labels = @queries.map do |query|

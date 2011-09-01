@@ -1,7 +1,0 @@
-<% form_tag :controller => 'graph_maker', :action => 'select_view', :project_id => @project.identifier do %>
-  <%= radio_button 'graph', 'mode', 'trend', :onClick => 'this.form.submit();' %>日時別傾向分析
-  <%= radio_button 'graph', 'mode', 'completion', :onClick => 'this.form.submit();' %>解決時間分析
-  <%= radio_button 'graph', 'mode', 'customize', :onClick => 'this.form.submit();' %>カスタマイズ傾向分析
-  <%= radio_button 'graph', 'mode', 'long', :onClick => 'this.form.submit();' %>長期遷移分析
-
-<% end %>
