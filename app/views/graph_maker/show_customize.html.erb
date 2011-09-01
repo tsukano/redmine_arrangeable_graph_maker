@@ -1,0 +1,22 @@
+<h2>カスタムクエリ毎チケット件数傾向分析グラフ</h2>
+<p>
+  このグラフは、このプロジェクトで使用しているカスタムクエリ内のチケット件数を、「グループ条件」毎に集計したものです。
+<br/>
+  ● カスタムクエリのグループ毎の偏りを分析する事ができます。
+<br />
+  ● カスタムクエリを追加・修正する事により、グラフを自由に追加・修正する事ができます。
+</p>
+<% @queries.each_with_index do |query, i| %>
+  <% if query.group_by == nil || query.group_by == "" %>
+    <h4><%= query.name + '(グループ条件:無し)' %></h4>
+    グラフ無し(グループ条件が指定無しのため)
+  <% else %>
+    <h4><%= "#{query.name}(グループ条件:#{@group_labels[i]})" %></h4>
+    <img src='<%= url_for :controller => 'graph_maker', 
+                          :action => 'get_customize_graph',
+                          :project_id => @project.identifier,
+                          :query_id => query.id %>' >
+  <% end %>
+<% end %>
+
+

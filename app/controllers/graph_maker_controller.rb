@@ -2,33 +2,63 @@ class GraphMakerController < ApplicationController
   unloadable
 
   before_filter :find_project
-  before_filter :authorize, :only => [:show_long, 
-                                      :show_trend,
-                                      :show_completion]
+  before_filter :authorize, 
+                :only => [:select_view,
+                          :show_long, 
+                          :show_trend,
+                          :show_customize,
+                          :show_completion]
   menu_item :long_graph, :only => :show_long
   menu_item :trend_graph, :only => :show_trend
   menu_item :completion_graph, :only => :show_completion
+  menu_item :customize_graph, :only => :show_customize
+
+  helper :queries
+  include QueriesHelper
+  helper :sort
+  include SortHelper
+=begin
+  def select_view
+    if params['graph']
+      case params['graph']['mode']
+      when 'trend'
+        redirect_to :action => :show_trend, :project_id => params[:project_id]
+      when 'completion'
+        redirect_to :action => :show_completion
+      end
+    else
+    redirect_to :action => :show_trend, :project_id => params[:project_id]
+    end
+
+  end
+=end  
+  def show_customize
+    @queries = Query.find_all_by_project_id(@project.id)
+    @group_labels = @queries.map do |query|
+      if query.group_by =~ /cf_(\d+)/
+        CustomField.find($1).name
+      else
+        I18n.t('field_' + query.group_by)
+      end
+    end
+  end
 
   def show_long
 
   end
 
   def show_trend
-    @queries = Query.find_all_by_project_id(@project.id)
   end
 
   def show_completion
 
     @first_interval = params[:first_interval]
-    if @first_interval.nil? || @first_interval.empty?
-      @first_interval = AdvancedIssue::DEFAULT_FIRST_INTERVAL 
-    end
+    @first_interval ||= CompletionGraph::DEFAULT_FIRST_INTERVAL 
 
-    advanced_issue = AdvancedIssue.new
+    advanced_issue = AdvancedIssue.new(CompletionGraph.new(@project.id))
     
-    intervals = advanced_issue.intervals(@first_interval)
-    @counts = advanced_issue.counts_completion_time(@project.id,
-                                                    intervals)
+    intervals = CompletionGraph.intervals(@first_interval)
+    @counts = advanced_issue.count(intervals)
 
     @labels = Array.new
     @table_labels = Array.new
@@ -40,13 +70,13 @@ class GraphMakerController < ApplicationController
     @table_labels.push(AdvancedDate.get_formatted_time(intervals.last, :more_than))
 
     @all_labels = Hash.new
-    AdvancedIssue::INTERVALS.keys.sort.each do |key|
+    CompletionGraph::INTERVALS.keys.sort.each do |key|
       @all_labels[key] = Array.new
-      AdvancedIssue::INTERVALS[key].each do |interval|
+      CompletionGraph::INTERVALS[key].each do |interval|
         display_time = AdvancedDate.get_formatted_time(interval, :less_than)
         @all_labels[key].push display_time
       end
-      display_time = AdvancedDate.get_formatted_time(AdvancedIssue::INTERVALS[key].last, :more_than)
+      display_time = AdvancedDate.get_formatted_time(CompletionGraph::INTERVALS[key].last, :more_than)
       @all_labels[key].push display_time
     end
 
@@ -56,8 +86,8 @@ class GraphMakerController < ApplicationController
     counts = params[:counts].map { |count_str| count_str.to_i }
     labels = params[:labels]
 
-    graph = CustomizedGraph.new("チケット完了までの時間", 600, Gruff::Bar)
-    graph.push_data("#{DateTime.now.month}月度チケット件数", counts)
+    graph = CustomizedGraph.new("完了時間毎のチケット件数", 600, Gruff::Bar)
+    graph.push_data("#{DateTime.now.month}月度", counts)
 
     graph.set_labels_from_array(labels)
 
@@ -68,24 +98,28 @@ class GraphMakerController < ApplicationController
   end
 
 
-  def get_monthly_graph
-    created_issues = Issue.find(:all,
-                                :select => :created_on,
-                                :order => "created_on ASC",
-                                :conditions => [ "project_id = ? and " +
-                                                 "created_on > ? ",
-                                                 @project.id,
-                                                 DateTime.now - 1.months])
+  def get_trend_graph
+    graph = CustomizedGraph.new(I18n.t("graph_title.trend_#{params[:each_by]}"),
+                                600, 
+                                "Gruff::#{params[:graph_variation]}".constantize)
 
+    trend_graph = AdvancedIssue.new(TrendGraph.new(@project.id, 
+                                                   params[:each_by]))
+    count_each_time = trend_graph.count
 
-    count_each_hour = Array.new(24,0)
-    created_issues.each do |issue|
-      count_each_hour[issue.created_on.hour] += 1
+    graph.push_data("直近1ヶ月分 ", 
+                    count_each_time)
+    count_each_time.size.times do |num|
+      case params[:each_by]
+      when 'day'
+        label = (num + 1).to_s
+      when 'wday'
+        label = I18n.t("graph_items.wday_#{num}")
+      when 'hour'
+        label = num.to_s
+      end
+      graph.push_label(label)
     end
-
-    graph = CustomizedGraph.new("時間帯別のチケット件数", 600, Gruff::Line)
-    graph.push_data("作成日並び", count_each_hour)
-    (0..23).each do |hour| graph.push_label(hour.to_s) end
 
     send_data(graph.blob,
               :type => 'image/png', 
@@ -94,40 +128,23 @@ class GraphMakerController < ApplicationController
   end
 
   def get_long_graph
-    year = 2011
-    start_date = DateTime.new(year, 4)
-
-    project_trackers = @project.trackers
-    count_each_tracker = Hash.new
-    project_trackers.each { |tracker| count_each_tracker.store tracker, Array.new }
-
-    graph = CustomizedGraph.new("月毎のチケット件数", 
+    long_graph = AdvancedIssue.new(LongGraph.new(@project.id,
+                                                 @project.trackers,
+                                                 params[:year]))
+    graph = CustomizedGraph.new("#{params[:year]}年度のチケット件数", 
                                 600, 
-                                "Gruff::#{params[:graph_variation]}".constantize)
+                                Gruff::Line)
 
+    count_each_tracker = long_graph.count
 
-    12.times do |num| 
-      graph.push_label((start_date + num.months).month.to_s + "月")
-      issue_counts = Issue.count(:group => "tracker_id",
-                                 :conditions => [ "project_id = ? and " +
-                                                  "created_on >= ? and " +
-                                                  "created_on < ?",
-                                                  @project.id,
-                                                  start_date + num.months,
-                                                  start_date + (num + 1).months ])
-
-      project_trackers.each do |tracker|
-        count = issue_counts[tracker.id]
-        if count == nil
-          count_each_tracker[tracker].push 0
-        else
-          count_each_tracker[tracker].push count
-        end
-      end
+    @project.trackers.each do |tracker|
+      graph.push_data(tracker.name, 
+                      count_each_tracker[tracker])
     end
 
-    project_trackers.each do |tracker|
-      graph.push_data(tracker.name, count_each_tracker[tracker])
+    april = DateTime.new(DateTime.now.year, 4)
+    12.times do |num|
+      graph.push_label((april + num.month).month.to_s + "月")
     end
 
     send_data(graph.blob,
@@ -136,131 +153,21 @@ class GraphMakerController < ApplicationController
 
   end
 
-  def get_trend_graph
-    query = Query.find_by_id(params[:query_id])
-    group = query.group_by
-    graph = CustomizedGraph.new("#{query.name}(#{group}毎のticket件数)", 600, Gruff::Pie)
-=begin
-    tracker = 10 # shogai
-    group = "priority" # session[:query][:id]/ group_by no grouping retrieve_query 74
-=end
-    group_class = group == "status" ? "IssueStatus" : group.classify
-    item_names = group_class.constantize.all.collect{|item| [item.id, item.name] }
-    item_names = Hash[item_names]
-    issue_counts = Issue.count(:group      => "#{group}_id",
-                               :conditions => { :project_id => @project.id })
-    issue_counts.each do |count|
-      group_name = item_names[count[0]]
-      count = count[1]
+  def get_customize_graph
+    retrieve_query
+    @issue_count_by_group = @query.issue_count_by_group
+
+    graph = CustomizedGraph.new(@query.name,
+                                600, 
+                                Gruff::Pie)
+
+    @issue_count_by_group.each do |group, count|
+      group_name = group.to_s.size == 0 ? 'None' : group.to_s
       graph.push_data(group_name, count)
     end
+    
     send_data(graph.blob,
               :type => 'image/png', 
-              :disposition => 'inline')
-
-  end
-
-  def get_graph
-
-    gruff = Gruff::Net.new 500
-    gruff.title = "トラッカーサマリー結果"
-    gruff.font = "/usr/share/fonts/japanese/TrueType/sazanami-gothic.ttf"
-    gruff.theme_37signals
-
-    trackers = @project.trackers
-
-    
-    count_each_tracker = Hash.new
-
-    [false, true, :all].each do |is_closed_status|
-
-      trackers.each do |tracker|
-        count_issue = Issue.count(:first,
-                                  :include => :status,
-                                  :conditions => 
-                                    ["issues.project_id = ? AND " +
-                                     "issues.tracker_id = ? AND " +
-                                     "issue_statuses.is_closed IN (?)",
-                                      @project.id, 
-                                      tracker.id,
-                                      is_closed_status == :all ? [true, false] :
-                                                                 is_closed_status])
-
-        if count_each_tracker.keys.include? is_closed_status
-          count_each_tracker[is_closed_status].push count_issue
-        else
-          count_each_tracker[is_closed_status] = [count_issue]
-        end
-      end
-    end
-
-    gruff.data("完了   #{count_each_tracker[true]}", count_each_tracker[true])
-    gruff.data("未完了 #{count_each_tracker[false]} ", count_each_tracker[false])
-    gruff.data("全て   #{count_each_tracker[:all]} ", count_each_tracker[:all])
-
-    trackers.each_with_index do |tracker, i|
-      gruff.labels.store(i, tracker.name)
-    end
-
-
-#NG
-=begin
-    @project.trackers.each_with_index do |tracker, i|
-    
-      count_issue_not_completed = Issue.count(:first,
-                                              :include => :status,
-                                              :conditions => 
-                                                ["issues.project_id = ? AND " +
-                                                 "issues.tracker_id = ? AND " +
-                                                 "issue_statuses.is_closed = true",
-                                                  @project.id, tracker.id])
-
-      count_issue_completed = Issue.count(:first,
-                                          :include => :status,
-                                          :conditions => 
-                                          ["issues.project_id = ? AND " +
-                                           "issues.tracker_id = ? AND " +
-                                           "issue_statuses.is_closed = false",
-                                            @project.id, tracker.id])
-
-      gruff.data(tracker.name, 
-                 [ count_issue_not_completed, 
-                   count_issue_completed ])
-
-      gruff.labels.store(i, 
-    end
-=end
-=begin
-    tracker = @project.trackers[0]
-
-    count_issue_not_completed = Issue.count(:first,
-                                            :include => :status,
-                                            :conditions => 
-                                              ["issues.project_id = ? AND " +
-                                               "issues.tracker_id = ? AND " +
-                                               "issue_statuses.is_closed = true",
-                                                @project.id, tracker.id])
-
-    count_issue_completed = Issue.count(:first,
-                                        :include => :status,
-                                        :conditions => 
-                                        ["issues.project_id = ? AND " +
-                                         "issues.tracker_id = ? AND " +
-                                         "issue_statuses.is_closed = false",
-                                          @project.id, tracker.id])
-
-
-    gruff = Gruff::Pie.new 500
-    gruff.title = "#{tracker.name}サマリー結果"
-    gruff.font = "/usr/share/fonts/japanese/TrueType/sazanami-gothic.ttf"
-    gruff.theme_37signals
-
-    gruff.data('未完了', [count_issue_not_completed ])
-    gruff.data('完了', [count_issue_completed ])
-=end
-
-    send_data(gruff.to_blob('jpg'), 
-              :type => 'image/jpg',
               :disposition => 'inline')
 
   end

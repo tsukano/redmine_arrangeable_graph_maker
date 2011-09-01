@@ -1,7 +1,9 @@
 ja:
   label_trend_graph: "傾向G"
   label_long_graph: "長期G"
-  label_completion_graph: "完了G"
+  label_completion_graph: "解決G"
+  label_customize_graph: "ｶｽﾀﾑG"
+  label_view_graph_menu: "グラフ"
   project_module_arrangeable_graph_maker: "グラフメーカープラグイン"
   permission_view_graph: "グラフ表示"
   graph_items:
@@ -11,3 +13,14 @@ ja:
     less_than: "以内"
     more_than: "以上"
     others: "その他"
+    wday_0: "日"
+    wday_1: "月"
+    wday_2: "火"
+    wday_3: "水"
+    wday_4: "木"
+    wday_5: "金"
+    wday_6: "土"
+  graph_title:
+    trend_hour: "時間帯毎のチケット件数"
+    trend_day:  "日にち毎のチケット件数"
+    trend_wday: "曜日毎のチケット件数"

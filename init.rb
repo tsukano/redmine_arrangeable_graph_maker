@@ -1,5 +1,6 @@
 require 'redmine'
 require 'gruff'
+require 'yaml'
 Redmine::Plugin.register :redmine_arrangeable_graph_maker do
   name 'Redmine Arrangeable Graph Maker plugin'
   author 'Ryuma Tsukano'
@@ -11,37 +12,53 @@ Redmine::Plugin.register :redmine_arrangeable_graph_maker do
 
   project_module :arrangeable_graph_maker do
     permission :view_graph, 
-               :graph_maker => [:get_graph, 
-                                :get_trend_graph, 
-                                :show_trend,
+               :graph_maker => [:get_trend_graph, 
+                                :get_customize_graph,
                                 :get_long_graph,
+                                :get_completion_graph,
                                 :show_long, 
-                                :get_monthly_graph,
-                                :show_completion,
-                                :get_completion_graph]
+                                :show_trend,
+                                :show_customize,
+                                :show_completion]
   end
+
+=begin
+  menu :project_menu, 
+       :view_graph_menu, 
+       { :controller => 'graph_maker', 
+         :action => 'select_view' }, 
+       :after => :calendar, 
+       :param => :project_id
+=end
+
 
   menu :project_menu, 
        :long_graph, 
        { :controller => 'graph_maker', 
          :action => 'show_long' }, 
-       :after => :activity, 
+       :after => :calendar, 
        :param => :project_id
 
   menu :project_menu,
        :completion_graph,
        { :controller => 'graph_maker',
          :action => 'show_completion'},
-       :after => :activity,
+       :after => :calendar,
+       :param => :project_id
+
+  menu :project_menu,
+       :customize_graph,
+       { :controller => 'graph_maker',
+         :action => 'show_customize'},
+       :after => :calendar,
        :param => :project_id
 
   menu :project_menu, 
        :trend_graph, 
        { :controller => 'graph_maker', 
          :action => 'show_trend' }, 
-       :after => :activity, 
+       :after => :calendar, 
        :param => :project_id
-
 
 end
 

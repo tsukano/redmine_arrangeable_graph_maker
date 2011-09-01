@@ -30,11 +30,11 @@ class AdvancedDate
     when 0..59
       return i18n_format.call(minute, :min)
     when 60..(60 * 24 - 1)
-      h = (minute / 60.0).round(1)
-      return i18n_format.call(h, :hour)
+      hour = minute / 60
+      return i18n_format.call(hour, :hour)
     else
-      d = (minute / 60.0 / 24.0 ).round(1)
-      return i18n_format.call(d, :day)
+      day = minute / 60 / 24 
+      return i18n_format.call(day, :day)
     end
   end
 end

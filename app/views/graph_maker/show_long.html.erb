@@ -1,23 +1,15 @@
+<h2>チケット発生件数長期的推移分析グラフ</h2>
 <p>
-長期遷移グラフ
+  このグラフは、１年間あたりに作成されるチケット件数を月毎に集計したものです。
+  <br />
+  ● 長期的なチケット発生件数の推移を分析する事ができます。
 </p>
-注意：まだプロトです。<br/>
-<h3>2011</h3>
+
+<% ((DateTime.now.year - 2)..(DateTime.now.year)).reverse_each do |year| %>
+<h4><%= year %></h4>
 <img src='<%= url_for :controller => 'graph_maker', 
                       :action => 'get_long_graph',
                       :project_id => @project.identifier,
-                      :graph_variation => 'StackedBar' %>' >
-
-<h3>2010</h3>
-<img src='<%= url_for :controller => 'graph_maker', 
-                      :action => 'get_long_graph',
-                      :project_id => @project.identifier,
-                      :graph_variation => 'Net' %>' >
-
-<h3>2009</h3>
-<img src='<%= url_for :controller => 'graph_maker', 
-                      :action => 'get_long_graph',
-                      :project_id => @project.identifier,
-                      :graph_variation => 'Line' %>' >
-
+                      :year => year %>' >
+<% end %>
 

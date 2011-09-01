@@ -1,4 +1,9 @@
-<h2>チケット解決までの時間</h2>
+<h2>チケット解決時間分布分析グラフ</h2>
+<p>
+  このグラフは、チケット作成日時からステータス完了更新日時までの時間を、指定の間隔毎に集計したものです。
+  <br />
+  ● 解決までにかかった時間を分析する事ができます。
+</p>
 <% form_tag(:controller => 'graph_maker', :action => 'show_completion', :project_id => @project.identifier ) do %>
   <%= select_tag( 'first_interval', 
                   options_for_select(
@@ -22,7 +27,8 @@
       <% @counts.each do |count| %>
         <td>
           <%= count %>
-          <%= "(#{(count.to_f / sum.to_f * 100).round}%)" %>
+          <%#= "(#{(count.to_f / sum.to_f * 100).round}%)" %>
+          <%= "(#{ sum == 0 ? '0' : (count * 100 / sum).to_s}%)" %>
         </td>
       <% end %>
     </tr>

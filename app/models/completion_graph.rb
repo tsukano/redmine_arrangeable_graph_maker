@@ -1,4 +1,4 @@
-module CompletionGraph
+class CompletionGraph
 
   DEFAULT_FIRST_INTERVAL = '5'
   INTERVALS = { 1  => [ 1,  2,  3,  5,  30,   60],
@@ -16,7 +16,11 @@ module CompletionGraph
                           ) #size <<+1>> is for more than
                         end
 
-  def counts_completion_time(project_id, intervals)
+  def initialize(project_id)
+    @project_id = project_id
+  end
+
+  def count(intervals)
     closed_statuses = IssueStatus.find_all_by_is_closed(true)
     closed_journals = Journal.find(:all,
                                    :include => [:issue, :details],
@@ -25,7 +29,7 @@ module CompletionGraph
                                        "journal_details.prop_key = 'status_id' and " +
                                        "journal_details.value IN ( ? ) and " +
                                        "journals.created_on between ? and ? ",
-                                       project_id,
+                                       @project_id,
                                        closed_statuses,
                                        AdvancedDate.first_day_in_this_month,
                                        AdvancedDate.last_day_in_this_month] )
@@ -34,7 +38,7 @@ module CompletionGraph
     return count_each_interval
   end
 
-  def intervals(first_interval)
+  def self.intervals(first_interval)
     return INTERVALS[first_interval.to_i]
   end
 
