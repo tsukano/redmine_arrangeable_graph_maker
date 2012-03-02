@@ -4,17 +4,20 @@
   <br />
   ● 解決までにかかった時間を分析する事ができます。
 </p>
-<% form_tag(:controller => 'graph_maker', :action => 'show_completion', :project_id => @project.identifier ) do %>
+<% form_tag(:action => controller.action_name, 
+            :project_id => @project.identifier ) do %>
+  <%= render :partial => 'view_selecter' %> 
+  <br />
   <%= select_tag( 'first_interval', 
                   options_for_select(
                     @all_labels.keys.sort.map do |key|
                       [ @all_labels[key][0] + " ～ " + @all_labels[key][6], key.to_s ]
                     end,
                     @first_interval
-                  )
+                  ),
+                  :onChange => 'this.form.submit();' 
                 ) %>
 
-  <%= submit_tag("送信") %>
 <% end %>
 
 <table class="list" style="width:600px;">

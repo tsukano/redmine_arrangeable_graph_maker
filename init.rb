@@ -22,16 +22,6 @@ Redmine::Plugin.register :redmine_arrangeable_graph_maker do
                                 :show_completion]
   end
 
-=begin
-  menu :project_menu, 
-       :view_graph_menu, 
-       { :controller => 'graph_maker', 
-         :action => 'select_view' }, 
-       :after => :calendar, 
-       :param => :project_id
-=end
-
-
   menu :project_menu, 
        :long_graph, 
        { :controller => 'graph_maker', 

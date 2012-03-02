@@ -37,4 +37,15 @@ class AdvancedDate
       return i18n_format.call(day, :day)
     end
   end
+
+  def self.months_up_to_now(date_from)
+    date_to = self.first_day_in_this_month
+    date_from = DateTime.new(date_from.year, date_from.month, 1)
+    months = Array.new([DateTime.now - 1.month + 1.day])
+
+    while ((date_to -= 1.month) >= date_from)
+      months.push date_to
+    end 
+    return months
+  end
 end

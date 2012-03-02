@@ -8,6 +8,16 @@ class GraphMakerController < ApplicationController
                           :show_trend,
                           :show_customize,
                           :show_completion]
+  before_filter :get_target_month,
+                :only => [:show_trend,
+                          :get_trend_graph,
+                          :show_completion,
+                          :get_completion_graph]
+
+  before_filter :get_months_up_to_now,
+                :only => [:show_trend,
+                          :show_completion]
+
   menu_item :long_graph, :only => :show_long
   menu_item :trend_graph, :only => :show_trend
   menu_item :completion_graph, :only => :show_completion
@@ -44,7 +54,7 @@ class GraphMakerController < ApplicationController
     advanced_issue = AdvancedIssue.new(CompletionGraph.new(@project.id))
     
     intervals = CompletionGraph.intervals(@first_interval)
-    @counts = advanced_issue.count(intervals)
+    @counts = advanced_issue.count(intervals, @target_month)
 
     @labels = Array.new
     @table_labels = Array.new
@@ -73,7 +83,7 @@ class GraphMakerController < ApplicationController
     labels = params[:labels]
 
     graph = CustomizedGraph.new("完了時間毎のチケット件数", 600, Gruff::Bar)
-    graph.push_data("#{DateTime.now.month}月度", counts)
+    graph.push_data("チケット数", counts)
 
     graph.set_labels_from_array(labels)
 
@@ -91,7 +101,7 @@ class GraphMakerController < ApplicationController
 
     trend_graph = AdvancedIssue.new(TrendGraph.new(@project.id, 
                                                    params[:each_by]))
-    count_each_time = trend_graph.count
+    count_each_time = trend_graph.count(@target_month)
 
     graph.push_data("直近1ヶ月分 ", 
                     count_each_time)
@@ -165,4 +175,15 @@ class GraphMakerController < ApplicationController
     render_404
   end
 
+  def get_target_month
+    if params[:target_month] && params[:target_month] =~ /\d+(\/\d+){2}/
+      @target_month = DateTime.parse(params[:target_month])
+    else
+      @target_month = DateTime.now - 1.month
+    end
+  end
+  
+  def get_months_up_to_now
+    @months = AdvancedDate.months_up_to_now(@project.created_on)
+  end
 end

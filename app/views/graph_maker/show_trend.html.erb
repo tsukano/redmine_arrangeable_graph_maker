@@ -5,10 +5,16 @@
   ● 直近のチケット発生タイミングの傾向を分析する事ができます。
 </p>
 
+<% form_tag :action => controller.action_name, 
+            :project_id => @project.identifier do %>
+  <%= render :partial => 'view_selecter' %> 
+<% end %>
+
 <h4>日にち毎のチケット件数</h4>
 <img src='<%= url_for :controller => 'graph_maker', 
                       :action => 'get_trend_graph',
                       :project_id => @project.identifier,
+                      :target_month => @target_month.strftime('%Y/%m/%d'),
                       :each_by => 'day',
                       :graph_variation => 'Bar' %>' >
 
@@ -16,6 +22,7 @@
 <img src='<%= url_for :controller => 'graph_maker', 
                       :action => 'get_trend_graph',
                       :project_id => @project.identifier,
+                      :target_month => @target_month.strftime('%Y/%m/%d'),
                       :each_by => 'hour',
                       :graph_variation => 'Bar' %>' >
 
@@ -23,6 +30,7 @@
 <img src='<%= url_for :controller => 'graph_maker', 
                       :action => 'get_trend_graph',
                       :project_id => @project.identifier,
+                      :target_month => @target_month.strftime('%Y/%m/%d'),
                       :each_by => 'wday',
                       :graph_variation => 'Bar' %>' >
 
