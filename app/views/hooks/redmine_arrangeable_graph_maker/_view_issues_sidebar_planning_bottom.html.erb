@@ -1,0 +1,24 @@
+<h3>グラフ表示</h3>
+<%= link_to "日時別傾向分析グラフ", 
+      :controller => "graph_maker", 
+      :action => "show_trend", 
+      :project_id => @project.identifier %>
+<br>
+<%= link_to "カスタムクエリ毎チケット件数傾向分析グラフ",
+      :controller => "graph_maker",
+      :action => "show_customize",
+      :project_id => @project.identifier %>
+
+<br>
+<%= link_to "チケット解決時間分布分析グラフ", 
+      :controller => "graph_maker", 
+      :action => "show_completion", 
+      :project_id => @project.identifier %>
+
+<br>
+<%= link_to "チケット発生件数長期的推移分析グラフ", 
+      :controller => "graph_maker", 
+      :action => "show_long", 
+      :project_id => @project.identifier %>
+
+<br>
